@@ -12,29 +12,29 @@ from tempfile import TemporaryFile
 from xlwt import Workbook,easyxf
 from xlrd import open_workbook
 
-#当天日期
+#Today's Date
 today = datetime.date.today()
 
-#生成报表的目录
+#Contents of report
 report_dir="/work/opt/zabbix-reports"
-#MySQL的相关信息
-host='127.0.0.1'
+#MySQL Infomation
+host='localhost'
 port=3306
-user = 'report_user'
-password = 'report_passwd'
+user = 'readonly'
+password = 'Reporting123##'
 database = 'zabbix'
 
-#要生成执行的KEY，都存到此元组中
+#To generate executed KEY, save all of the info 
 keys = ("cpuload","disk_usage","network_in","network_out")
-#除boolen型（如vip)的监控项外，都设置了阀值，出报表区间内最大值操作此值的，显示背景红色
-#所有没有单独判断的key, 都要在此字典中定义其阀值
+#In addition to boolen type ( such as vip) monitoring items , the thresholds are set , the maximum value within the operating range of the report , showing a red background
+#All no separate judgment key, which must define the threshold in this dictionary
 #-------------------------------------------------------------
-# 网卡流量阀值：50M/s 
+# NIC flow threshold : 50M / s 
 #-------------------------------------------------------------
 thre_dic = {"cpuload":15,"disk_usage":85,"network_in":409600}
 
 #-------------------------------------------------------------
-#自定义生成报表：
+#Custom Report：
 #-------------------------------------------------------------
 def custom_report(startTime,endTime):
   
@@ -44,55 +44,55 @@ def custom_report(startTime,endTime):
 	generate_excel(customStart,customEnd,0,sheetName)
 
 #-------------------------------------------------------------
-# 按日生成报表：
-# 	以执行脚本当前unix timestamp和当天午夜的unix timestamp来抽取报表
-#	脚本一定要24点之前运行
+# Daily report :
+# 	To execute the script and the current unix timestamp amd to extract statements
+#	Script must be run before midnight
 #-------------------------------------------------------------
 def daily_report():
-#	today = datetime.date.today() #获取今天日期
-	dayStart = time.mktime(today.timetuple()) #由今天日期，取得凌晨unix timestamp
-	dayEnd = time.time() #获取当前系统unix timestamp
+#	today = datetime.date.today() Get today's date
+	dayStart = time.mktime(today.timetuple()) 
+	dayEnd = time.time() #Get the current system unix timestamp
 	sheetName = time.strftime('%Y%m%d',time.localtime(dayEnd))
     	generate_excel(dayStart,dayEnd,1,sheetName)    
 #-------------------------------------------------------------
-# 按星期生成报表
+# Generate reports by week
 #-------------------------------------------------------------
 
 def weekly_report():
 	lastMonday = today
-#	lastMonday = datetime.date.today()#获取今天日期
-	#取得上一个星期一
+#	lastMonday = datetime.date.today()#Get today's date
+	#Grabs information on Monday
 	while lastMonday.weekday() != calendar.MONDAY:
 		lastMonday -= datetime.date.resolution
 	
-	weekStart = time.mktime(lastMonday.timetuple())# 获取周一午夜的unix timestamp
-	weekEnd = time.time()#获取当前系统unix timestamp
+	weekStart = time.mktime(lastMonday.timetuple())#Will get data on Monday at midnight via unix timestamp
+	weekEnd = time.time()#Get the current system unix timestamp
 	#weekofmonth = (datetime.date.today().day+7-1)/7
 	weekofmonth = (today.day+7-1)/7
 	sheetName = "weekly_" + time.strftime('%Y%m',time.localtime(weekEnd)) + "_" + str(weekofmonth)
 	generate_excel(weekStart,weekEnd,2,sheetName)
 			
 #-------------------------------------------------------------
-# 按月生成报表
+# Generate reports by Month
 #-------------------------------------------------------------
 
 def monthly_repport():
-#	firstDay =  datetime.date.today() #当前第一天的日期
-	firstDay =  today #当前第一天的日期
-	#取得当月第一天的日期
+##	firstDay =  datetime.date.today() #The first day of the current date
+	firstDay =  today #The first day of the current date
+	#The first day of the month of acquisition date
 	while firstDay.day != 1:
 		firstDay -= datetime.date.resolution
-	monthStart = time.mktime(firstDay.timetuple()) #当月第一天的unix timestamp
-	monthEnd = time.time()	#当前时间的unix timestamp
+	monthStart = time.mktime(firstDay.timetuple()) #The first day of the month via unix timestamp
+	monthEnd = time.time()	#Current unix timestamp
 	sheetName = "monthly_" + time.strftime('%Y%m',time.localtime(monthEnd))
 	generate_excel(monthStart,monthEnd,3,sheetName)
 	
 
 #-------------------------------------------------------------
-#  获取MySQL Connection
+#  Obtain MySQL Connection
 #-------------------------------------------------------------
 def getConnection():
-       # print "准备连接MySQL "
+       # print "Ready to connect to MySQL "
         try:
                 connection=MySQLdb.connect(host=host,port=port,user=user,passwd=password,db=database,connect_timeout=1);
         except MySQLdb.Error, e:
@@ -101,7 +101,7 @@ def getConnection():
 	return connection
 
 #-------------------------------------------------------------
-# 返回所有主机IP和hostid, 如：('192.168.10.62', 10113L,0),其中Role为添加的字段，1：M, 2:S,3:N
+# Back to all IP hosts and hostid, such as :( '192.168.10.62', 10113L, 0), which Role for the field to add , 1: M, 2: S, 3: N
 #-------------------------------------------------------------
 def getHosts():
 	conn=getConnection()
@@ -113,7 +113,7 @@ def getHosts():
 	return hosts
 
 #-------------------------------------------------------------
-# 返回指定主机监控Item的itmeid,
+# Item Returns the specified host monitoring of itmeid,
 #-------------------------------------------------------------
 def getItemid(hostid):
 	keys_str = "','".join(keys)
@@ -125,7 +125,7 @@ def getItemid(hostid):
 	conn.close()
 	return itemids
 #-------------------------------------------------------------
-# 返回无指定hostid主机的报表值， 只针对数字history表中
+# Returns None specified hostid reports the value of the host , only for digital history table
 #-------------------------------------------------------------
 
 def getReportById_1(hostid,start,end):
@@ -139,7 +139,7 @@ def getReportById_1(hostid,start,end):
 	return values
 
 #-------------------------------------------------------------
-# 返回无指定hostid主机的报表值， 只针无符号数history_uint表, items.value_type=3
+# Returns None specified host hostid reports the value , only the needed unsigned history_uint table , items.value_type = 3
 #-------------------------------------------------------------
 
 def getReportById_2(hostid,start,end):
@@ -152,9 +152,9 @@ def getReportById_2(hostid,start,end):
         conn.close();
         return values
 #--------------------------------------------------------------
-#文件：生成Excel报表 
-#参数， start:抽取数据开始时间点 ， end:抽到数据结束时间点
-#	reportType:生成报表类型： 1 daily , 2 weekly, 3 monthly
+# File : generate Excel reports
+# Parameters , start: extract data start time , end: End point in time be able to get data
+# ReportType: report type : 1 daily, 2 weekly, 3 monthly
 #-----------------------------------------------------------------
 
 def generate_excel(start,end,reportType,sheetName):
@@ -168,12 +168,12 @@ def generate_excel(start,end,reportType,sheetName):
 	
 	hosts = getHosts()
 	isFirstLoop=1
-	host_row = 2 #host ip所在的行号
+	host_row = 2 #host ip
 	
 	max_col = 1
 	avg_col = 2
 	
-	#这义Excel的各种格式
+	#This is to format Excel
 	normal_style = easyxf(
 'borders: right thin,top thin,left thin, bottom thin;'
 'align: vertical center, horizontal center;'
@@ -191,7 +191,7 @@ def generate_excel(start,end,reportType,sheetName):
 		max_col = 1
 	        avg_col = 2
 		reports = getReportById_1(hostid,start,end) + getReportById_2(hostid,start,end)
-		if(isFirstLoop==1):#第一次循环时，写表头
+		if(isFirstLoop==1): # The first time through the loop will write to the header
 			sheet1.write(host_row,0,ip,normal_style)
 			for report in reports:
 				title = report[1] + " " + report[2]		
@@ -202,12 +202,12 @@ def generate_excel(start,end,reportType,sheetName):
 				sheet1.write(1,title_col+1,"Average",normal_style)
 				title_col += title_col_step
 		
-				#写数据,判断最大值是否超过指定的阀值
-				#当最大值大于指定的阀值，此显示为红色
+				# Writes data , determines whether the maximum value exceeds a specified threshold
+                                # When the maximum value is greater than the specified threshold value , this is displayed in red
 				if(report[3] >= thre_dic[report[1]]):
 					sheet1.write(host_row,max_col,report[3],abnormal_style)
 					sheet1.write(host_row,avg_col,report[4],normal_style)
-				else:	#未超过阀值则正常显示
+				else:	# Does not exceed the threshold 
 					sheet1.write(host_row,max_col,report[3],normal_style)
 					sheet1.write(host_row,avg_col,report[4],normal_style)
 				max_col = max_col + 2
@@ -216,11 +216,11 @@ def generate_excel(start,end,reportType,sheetName):
 		else:
 			sheet1.write(host_row,0,ip,normal_style)
 			for report in reports:
-				#当最大值大于指定的阀值，此显示为红色
+				# When the maximum value is greater than the specified threshold value , this is displayed in red
                         	if(report[3] >= thre_dic[report[1]]):
                                 	sheet1.write(host_row,max_col,report[3],abnormal_style)
                                         sheet1.write(host_row,avg_col,report[4],normal_style)
-                        	 else:   #未超过阀值则正常显示
+                        	 else: #Does not exceed the threshold then the normal display
                                  	sheet1.write(host_row,max_col,report[3],normal_style)
                                  	sheet1.write(host_row,avg_col,report[4],normal_style)
 	
@@ -231,88 +231,90 @@ def generate_excel(start,end,reportType,sheetName):
 	saveReport(reportType,book)
 
 #----------------------------------------------------------------------
-#函数：根据不同的报表类型，实现不同的保存方式
-#参数： reportType 报表类型：0 custom 1 daily, 2 weekly , 3 monthly
-#	workBook 当前Excel的工作薄	
+# Functions: Depending on the type of report , to implement different ways to save
+# Parameters : reportType report types : 0 custom 1 daily, 2 weekly, 3 monthly
+# WorkBook the current Excel workbook	
 #---------------------------------------------------------------------
 def saveReport(reportType,workBook):
-	#报表目录是否存在，不存在则新创建
+	#Reports the directory exists , if it does not exist, then it creates new
 	if(not (os.path.exists(report_dir))):
 		os.makedirs(report_dir)
-	#切换到报表目录
+	#Switch 
 	os.chdir(report_dir)
-	#报表每以月单位的目录存放
+	#Reporting units per month stored in the directory 
 	month_dir=time.strftime('%Y-%m',time.localtime(time.time()))
 	if(not (os.path.exists(month_dir))):
 		os.mkdir(month_dir)
 	os.chdir(month_dir)
-	#自定义生成报表	
+	#Custom Report	
 	if(reportType == 0):
 		excelName = "custom_report_"+ time.strftime('%Y%m%d_%H%M%S',time.localtime(time.time())) + ".xls"		
-	#日报
+	#Daily
 	elif(reportType == 1):
 		excelName = "daily_report_" + time.strftime('%Y%m%d',time.localtime(time.time())) + ".xls"
-	#周报
+	#Weekly
 	elif(reportType == 2):
 		#weekofmonth = (datetime.date.today().day+7-1)/7			
 		weekofmonth = (today.day+7-1)/7			
 		excelName = "weekly_report_" +  time.strftime('%Y%m',time.localtime(time.time())) +"_" + str(weekofmonth) + ".xls"
-	#月报
+	#Monthly
 	else:
 		monthName = time.strftime('%Y%m',time.localtime(time.time()))
 		excelName = "monthly_report_" + monthName + ".xls"
 #		currentDir = os.getcwd()
-#		files = os.listdir(currentDir)#默认为当前目录，也就是月目录
+#		files = os.listdir(currentDir)# The default is the current directory , which is the month directory
 #		for file in files:
 #			wb = open_workbook(file)
 	print excelName				
 	workBook.save(excelName)
 
 #----------------------------------------------------=-----------------
-# 入口函数
+# Entry Function
 #------------------------------------------------------------------------
 
 def main():
-	#最好加上时间类型检查
-	argvCount = len(sys.argv) #参数个数，用于判断是生成自定义报表还是周期性报表	
+	
+	argvCount = len(sys.argv) #The number of parameters for judging is to generate custom reports or periodic reports	
 	dateFormat = "%Y-%m-%d %H:%M:%S"
 	today = datetime.date.today()
 	if(argvCount == 2):
-		#只传入一个参数，生成自定义报表为：当天00点到当前时间的报表
-		#时间都格式化为元组格式传入
+		
+# Only pass a parameter to generate custom reports : 00 reports point to the current day time
+# Time format for incoming tuple format
 		startTime = today.timetuple()
 		dateFormat = "%Y-%m-%d %H:%M:%S"
-		endTime = time.strptime(sys.argv[1],dateFormat) #中止时间为当前时间
+		endTime = time.strptime(sys.argv[1],dateFormat) 
 		custom_report(startTime,endTime)
 	
 	elif(argvCount == 3):
-		#传入两个参数，生成自定义报表为：以第一参数为起始时间，第二参数为结束时间的区别报表
+		#Two arguments , generate custom reports for : the first parameter is the start time, the second parameter is the difference between the end time of the report
 		startTime =  time.strptime(sys.argv[1],dateFormat)
 		endTime =  time.strptime(sys.argv[2],dateFormat)
 		custom_report(startTime,endTime)		
 	elif(argvCount ==1):
-		#无参数传入则生成周期性报表
+		#No parameters are passed to generate recurring reports
 		today = datetime.date.today()
-		dayOfMonth = today.day #取得当天为月的第几天
-		#取得年
+		dayOfMonth = today.day #Made the same day for the first few days of the month
+		
 		year = int(time.strftime('%Y',time.localtime(time.time())))
-		#取得月数
+		#Get the number of months
 		month = int(time.strftime('%m',time.localtime(time.time())))
-		#取得当月有多少天
+		#How many days of the month of acquisition
 		lastDayOfMonth = calendar.monthrange(year,month)[1]	
-		#每天都要生成日报
+		#generating daily
 		daily_report()
-		#当前星期天，生成周报
+		#Current Sunday , generate weekly
 		if(today.weekday()==6): 
 			weekly_report()
-		#当月最后一天，生成月报
+		#The last day of the month , generating monthly
 		if(dayOfMonth == lastDayOfMonth):
 			monthly_repport()
 	else:
-		#参数个数大于2为非法情况，打印异常信息，退出报表生成
+		#2 is greater than the number of parameters to be illegal , the print exception information and exit Report Builder
 		usage()
 def usage():
-	print """脚本没传入参数，则执行周期性报表；参数可为1，2个，注意时间格式强制要求： zabbix-report.py ['2012-09-01 01:12:00'] ['2012-09-01 01:12:00']"""
+	print """
+Script did not pass parameters, performs periodic reports ; parameter may be 1, 2 , pay attention to the time format mandatory： zabbix-report.py ['2012-09-01 01:12:00'] ['2012-09-01 01:12:00']"""
 
-#运行程序
+#Run the program
 main()
