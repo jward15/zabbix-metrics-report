@@ -1,4 +1,4 @@
-zabbix-report
+zabbix-metrics-report
 =============
 Description:
   This script for generating zabbix monthly, weekly, daily monitor item report.
