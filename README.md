@@ -13,7 +13,7 @@ Requirements:
 
 Usage:
 
-    1  Adding the zabbix-report.py script to the zabbix's MySQL database server's crontab.
+    1  Adding the zabbix-metrics-report.py script to the zabbix's MySQL database server's crontab.
        e.g   01 00 * * * /work/opt/zabbix-report.py
 
     2  Updating the MySQL connection variables in the script:
